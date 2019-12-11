@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Auto_Operation_Hive_Export_Message">
+	<select  id="selectAutoOperationHiveExportMessageByExportUser" parameterType="map" resultType="AutoOperationHiveExportMessage">
+		SELECT export_id,export_state,export_address,export_comment,export_sql,export_user,export_time
+		FROM auto_operation_hive_export_message WHERE export_user=#{user} order by export_id desc;
+	</select>
+	<select  id="selectAutoOperationHiveExportMessageByExportUserCount" parameterType="map" resultType="int">
+		SELECT count(*)
+		FROM auto_operation_hive_export_message WHERE export_user=#{user}
+	</select>
+	<update id="updateExportState" parameterType="AutoOperationHiveExportMessage">
+		update auto_operation_hive_export_message set export_state=#{exportState}
+		where export_id=#{exportId}
+	</update>
+</mapper>

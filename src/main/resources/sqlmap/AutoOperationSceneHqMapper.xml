@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Auto_Operation_Scene_Hq">
+	<resultMap type="AutoOperationMonthWeb" id="AutoOperationMonthFirstWebMap">
+		<result property="categoryId" column="id" jdbcType="INTEGER"/>
+		<result property="categoryName" column="name" jdbcType="VARCHAR"/>
+		<result property="datapackageStatus" column="datapackage_status" jdbcType="VARCHAR"/>
+		<collection property="dlist" column="{id=id,province_code=province_code,year=year,month=month}" 
+			ofType="AutoOperationMonthDetail" select="selectAutoOperationSceneHqAllForWebByCategoryId" javaType="ArrayList" />
+	</resultMap>
+	
+	<select id="selectAutoOperationMonthInfoFirst" parameterType="map" resultMap="AutoOperationMonthFirstWebMap">
+		select id,name,datapackage_status, #{province_code} province_code,#{year} year ,#{month} month from auto_operation_category;
+	</select>
+	
+	<select id="selectAutoOperationSceneHqAllForWebByCategoryId" parameterType="map" resultType="AutoOperationMonthDetail">
+		SELECT hp.NAME scene_name,hp.remark scene_remark,hp.category_id category_id,
+			hp.id scene_id,"1" scene_type,0 reach_number,0 order_number,0 dataplant_income,
+			#{year} year,#{month} month,#{province_code} province_code
+			FROM auto_operation_scene_hq hp 
+			WHERE  hp.category_id=#{id}
+	</select>
+	
+	
+	
+	
+	
+	
+</mapper>

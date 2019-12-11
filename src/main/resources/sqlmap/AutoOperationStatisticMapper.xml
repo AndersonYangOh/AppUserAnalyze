@@ -1,0 +1,322 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="AUTO_OPERATION_STATISTIC">
+	
+	<!-- (1-1)============================= selectStatisticTotal =================================== -->
+	<select id="selectStatisticTotal" parameterType="map" resultType="AutoOperationStatistic">
+		<![CDATA[ SELECT so.province_name AS org_name,IFNULL(v.COUNT,0) AS COUNT,CONVERT(IFNULL(v.reach_number,0)/10000,DECIMAL(12,2)) AS reach_number,CONVERT(IFNULL(v.order_number,0)/10000,DECIMAL(12,2)) AS order_number,IFNULL(v.dataplant_income,0) AS dataplant_income FROM province so LEFT JOIN 
+				(SELECT province_code,0 AS COUNT,SUM(reach_number) AS reach_number,SUM(order_number) AS order_number,SUM(dataplant_income) AS dataplant_income 
+				FROM auto_operation_month_info WHERE YEAR =#{year} AND MONTH =#{month} AND reach_number >0
+				GROUP BY province_code) v ON so.province_code = v.province_code
+				WHERE so.province_code <> '001' AND so.province_code <>'022' 
+				]]>
+				<if test="orgCode != '' and orgCode != null"><![CDATA[ AND so.province_code = #{orgCode} ]]></if>
+				<if test="orderBy != null"><![CDATA[ ORDER BY ${orderBy} ]]></if>
+				<if test="limit != null"><![CDATA[ limit 5 ]]></if>
+	</select>
+	
+	<!-- (1-2)============================= selectStatisticDetail =================================== -->
+	<select id="selectStatisticDetail" parameterType="map" resultType="AutoOperationStatistic">
+		<![CDATA[ SELECT so.province_name AS org_name,IFNULL(v.COUNT,0) AS COUNT,CONVERT(IFNULL(v.reach_number,0)/10000,DECIMAL(12,2)) AS reach_number,CONVERT(IFNULL(v.order_number,0)/10000,DECIMAL(12,2)) AS order_number,IFNULL(v.dataplant_income,0) AS dataplant_income FROM province so LEFT JOIN 
+				(SELECT province_code,COUNT(*) AS COUNT,SUM(reach_number) AS reach_number,SUM(order_number) AS order_number,SUM(dataplant_income) AS dataplant_income 
+				FROM auto_operation_month_info WHERE scene_type = #{sceneType} AND category_id = #{categoryId} AND YEAR =#{year} AND MONTH =#{month} AND reach_number >0
+				GROUP BY province_code) v ON so.province_code = v.province_code
+				WHERE so.province_code <> '001' AND so.province_code <>'022'
+				]]>
+				<if test="orgCode != '' and orgCode != null"><![CDATA[ AND so.province_code = #{orgCode} ]]></if>
+				<if test="orderBy != null"><![CDATA[ ORDER BY ${orderBy} ]]></if>
+	</select>
+	
+	<!-- (1-3)============================= selectCategoryCount =================================== -->
+	<select id="selectCategoryCount" resultType="int">
+		<![CDATA[ SELECT COUNT(*) AS COUNT FROM auto_operation_category  ]]>
+	</select>
+	
+	<!-- (1-4)============================= selectDatapackage =================================== -->
+	<select id="selectDatapackage" parameterType="java.lang.String" resultType="java.lang.String">
+		<![CDATA[ SELECT datapackage_status FROM auto_operation_category WHERE id = #{categoryId} limit 1 ]]>
+	</select>
+
+	<!-- (1-5)============================= selectCategory =================================== -->
+	<select id="selectCategory" resultType="AutoOperationCategory">
+		<![CDATA[ SELECT id,name,remark,datapackage_status FROM auto_operation_category ]]>
+	</select>
+	
+	<!-- (1-6)============================= selectSwitch =================================== -->
+	<select id="selectSwitch" resultType="AutoOperationSwitch">
+		<![CDATA[ SELECT id,year,month,switch_status FROM auto_operation_switch WHERE switch_status = 1 ORDER BY id desc LIMIT 1 ]]>
+	</select>
+	
+	<!-- (1-6)============================= selectSwitchClose =================================== -->
+	<select id="selectSwitchClose" resultType="AutoOperationSwitch">
+		<![CDATA[ SELECT id,year,month,switch_status FROM auto_operation_switch WHERE switch_status = 0 ORDER BY id desc LIMIT 1 ]]>
+	</select>
+	
+	<!-- (2-1)============================= selectChartTotal =================================== -->
+	<select id="selectChartTotal" resultType="AutoOperationChartTotal">
+		<![CDATA[ SELECT * FROM (
+			SELECT a.year,a.month,SUM(a.order_number/10000) totalNumber,SUM(a.dataplant_income) totalIncome
+			FROM auto_operation_month_info a
+			WHERE a.province_code != '001' ]]>
+			<if test="orgCode != '' and  orgCode != null"><![CDATA[ AND a.province_code = #{orgCode} ]]></if>
+			<![CDATA[ GROUP BY a.year,a.month
+			UNION ALL
+			SELECT a.year,a.month,SUM(a.order_number/10000) totalNumber,SUM(a.dataplant_income) totalIncome
+			FROM auto_operation_month_info_2017 a
+			WHERE a.province_code != '001' ]]>
+			<if test="orgCode != '' and  orgCode != null"><![CDATA[ AND a.province_code = #{orgCode} ]]></if>
+			<![CDATA[ 
+			GROUP BY a.year,a.month) v
+			WHERE CONCAT(YEAR,MONTH) BETWEEN #{startMonth} AND #{endMonth} ]]>
+			<![CDATA[ ORDER BY YEAR,MONTH ]]>
+	</select>
+	
+	<select id="selectChartTotalByYear" resultType="AutoOperationChartTotal">
+		<![CDATA[ SELECT YEAR,MONTH,SUM(totalNumber) AS totalNumber,SUM(totalIncome) AS totalIncome FROM (
+			SELECT a.year,a.month,SUM(a.order_number/10000) totalNumber,SUM(a.dataplant_income) totalIncome
+			FROM auto_operation_month_info a
+			WHERE a.province_code != '001' ]]>
+			<if test="orgCode != '' and  orgCode != null"><![CDATA[ AND a.province_code = #{orgCode} ]]></if>
+			<![CDATA[ GROUP BY a.year,a.month
+			UNION ALL
+			SELECT a.year,a.month,SUM(a.order_number/10000) totalNumber,SUM(a.dataplant_income) totalIncome
+			FROM auto_operation_month_info_2017 a
+			WHERE a.province_code != '001' ]]>
+			<if test="orgCode != '' and  orgCode != null"><![CDATA[ AND a.province_code = #{orgCode} ]]></if>
+			<![CDATA[ 
+			GROUP BY a.year,a.month) v
+			WHERE CONCAT(YEAR,MONTH) BETWEEN #{firstMonth} AND #{endMonth} ]]>
+			<if test="groupByYear != '' and  groupByYear != null"><![CDATA[ AND YEAR = #{groupByYear} ]]></if>
+			<![CDATA[ GROUP BY YEAR ]]>
+			<![CDATA[ ORDER BY YEAR,MONTH ]]>
+	</select>
+	
+	<!-- (2-2)============================= selectChartSceneTotal =================================== -->
+	<select id="selectChartSceneTotal" resultType="AutoOperationChartSceneTotal">
+		<![CDATA[ SELECT 
+		 p.province_name,
+		 SUM(IF(a.scene_type='1',1,0)) AS hq, 
+		 SUM(IF(a.scene_type='2',1,0)) AS branch
+		 FROM auto_operation_month_info a,province p 
+		 WHERE a.province_code != '001' AND a.province_code=p.province_code 
+		 AND a.year=#{year} AND a.month=#{month} AND a.reach_number !=0 ]]>
+		 <if test="orgCode != '' and  orgCode != null"><![CDATA[ AND a.province_code = #{orgCode} ]]></if>
+		<![CDATA[ GROUP BY p.province_name  ORDER BY hq DESC ]]>
+		<if test="limit != null"><![CDATA[ limit 5 ]]></if>
+	</select>
+	
+	<!-- (2-3)============================= selectIncomeRate =================================== -->
+	<select id="selectIncomeRate" resultType="AutoOperationChartIncomeRate">
+		<![CDATA[ SELECT p.province_name,IF(IFNULL(ai.income,0)=0,0,CONVERT(IFNULL(v.dataplant_income,0)/ai.income*100,DECIMAL(12,2))) AS rate FROM auto_operation_month_info_income ai LEFT JOIN (
+				SELECT province_code,SUM(dataplant_income) AS dataplant_income,YEAR,MONTH
+				FROM auto_operation_month_info WHERE YEAR =#{year} AND MONTH =#{month} AND reach_number >0
+				GROUP BY province_code) v ON ai.province_code = v.province_code AND ai.year=v.year AND ai.month=v.month
+				LEFT JOIN province p ON ai.province_code = p.province_code
+				WHERE ai.year =#{year} AND ai.month =#{month} ]]>
+				<if test="orgCode != '' and  orgCode != null"><![CDATA[ AND ai.province_code = #{orgCode} ]]></if>
+				<![CDATA[ ORDER BY rate DESC ]]>
+				<if test="limit != null"><![CDATA[ limit 5 ]]></if>
+	</select>
+	
+	<!-- (3-1)============================= selectStatisticChart =================================== -->
+	<select id="selectStatisticChart" resultType="AutoOperationStatisticChart">
+		<![CDATA[ SELECT p.province_name,o.name AS category_name,CONVERT(SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.order_number,0))/10000,DECIMAL(10,2)) AS order_number,
+				CONVERT((SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.order_number,0))-SUM(IF(CONCAT(a.year,a.month)='${startMonth}',a.order_number,0)))/10000,DECIMAL(10,2)) AS order_number_add,
+				CONVERT(IFNULL((SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.order_number,0))/SUM(IF(CONCAT(a.year,a.month)='${startMonth}',a.order_number,0))),2)*100-100,DECIMAL(10,2)) AS order_number_add_rate,
+				SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.dataplant_income,0)) AS dataplant_income,
+				SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.dataplant_income,0))-SUM(IF(CONCAT(a.year,a.month)='${startMonth}',a.dataplant_income,0)) AS dataplant_income_add,
+				CONVERT(IFNULL(SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.dataplant_income,0))/SUM(IF(CONCAT(a.year,a.month)='${startMonth}',a.dataplant_income,0)),2)*100-100,DECIMAL(10,2)) AS dataplant_income_add_rate,
+				CONVERT(SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.reach_number,0))/10000,DECIMAL(10,2)) AS reach_number,
+				CONVERT((SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.reach_number,0))-SUM(IF(CONCAT(a.year,a.month)='${startMonth}',a.reach_number,0)))/10000,DECIMAL(10,2)) AS reach_number_add,
+				CONVERT(IFNULL((SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.reach_number,0))/SUM(IF(CONCAT(a.year,a.month)='${startMonth}',a.reach_number,0))),2)*100-100,DECIMAL(10,2)) AS reach_number_add_rate,
+				CONVERT(IFNULL(SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.order_number,0))/SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.reach_number,0))*100,0),DECIMAL(10,2)) AS success_rate,
+				CONVERT(IFNULL(SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.order_number,0))/SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.reach_number,0))*100,0)-IFNULL(SUM(IF(CONCAT(a.year,a.month)='${startMonth}',a.order_number,0))/SUM(IF(CONCAT(a.year,a.month)='${startMonth}',a.reach_number,0))*100,0),DECIMAL(10,2)) AS success_rate_add,
+				CONVERT(IFNULL(IFNULL(SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.order_number,0))/SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.reach_number,0))*100,0)/IFNULL(SUM(IF(CONCAT(a.year,a.month)='${startMonth}',a.order_number,0))/SUM(IF(CONCAT(a.year,a.month)='${startMonth}',a.reach_number,0))*100,0),2)*100-100,DECIMAL(10,2)) AS success_rate_add_rate
+				FROM (SELECT province_code,SUM(reach_number) AS reach_number,SUM(order_number) AS order_number,SUM(dataplant_income) AS dataplant_income,YEAR,MONTH,category_id
+				FROM auto_operation_month_info WHERE reach_number >0 
+				GROUP BY province_code,YEAR,MONTH,category_id
+				UNION ALL 
+				SELECT province_code,SUM(reach_number) AS reach_number,SUM(order_number) AS order_number,SUM(dataplant_income) AS dataplant_income,YEAR,MONTH,category_id
+				FROM auto_operation_month_info_2017 WHERE reach_number >0 
+				GROUP BY province_code,YEAR,MONTH,category_id) a JOIN auto_operation_category o ON a.category_id=o.id
+				JOIN province p ON a.province_code = p.province_code
+				WHERE  a.province_code != '001'
+				AND  CONCAT(YEAR,MONTH) BETWEEN '${startMonth}' AND '${endMonth}'
+				]]>
+				<if test="groupBy != null"><![CDATA[ GROUP BY ${groupBy} ]]></if>
+				<if test="orderBy != null"><![CDATA[ ORDER BY ${orderBy} ]]></if>
+	</select>
+	<!-- (3-2)============================= selectStatisticChart2 =================================== -->
+	<select id="selectStatisticChart2" resultType="AutoOperationStatisticChart">
+		<![CDATA[ SELECT p.province_name,o.name AS category_name,CONVERT(SUM(a.order_number)/10000,DECIMAL(10,2)) AS order_number,
+				CONVERT((SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.order_number,0))-SUM(IF(CONCAT(a.year,a.month)='${startMonth}',a.order_number,0)))/10000,DECIMAL(10,2)) AS order_number_add,
+				CONVERT(IFNULL((SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.order_number,0))/SUM(IF(CONCAT(a.year,a.month)='${startMonth}',a.order_number,0))),2)*100-100,DECIMAL(10,2)) AS order_number_add_rate,
+				SUM(a.dataplant_income) AS dataplant_income,
+				SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.dataplant_income,0))-SUM(IF(CONCAT(a.year,a.month)='${startMonth}',a.dataplant_income,0)) AS dataplant_income_add,
+				CONVERT(IFNULL(SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.dataplant_income,0))/SUM(IF(CONCAT(a.year,a.month)='${startMonth}',a.dataplant_income,0)),2)*100-100,DECIMAL(10,2)) AS dataplant_income_add_rate,
+				CONVERT(SUM(a.reach_number)/10000,DECIMAL(10,2)) AS reach_number,
+				CONVERT((SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.reach_number,0))-SUM(IF(CONCAT(a.year,a.month)='${startMonth}',a.reach_number,0)))/10000,DECIMAL(10,2)) AS reach_number_add,
+				CONVERT(IFNULL((SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.reach_number,0))/SUM(IF(CONCAT(a.year,a.month)='${startMonth}',a.reach_number,0))),2)*100-100,DECIMAL(10,2)) AS reach_number_add_rate,
+				CONVERT(IFNULL(SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.order_number,0))/SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.reach_number,0))*100,0),DECIMAL(10,2)) AS success_rate,
+				CONVERT(IFNULL(SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.order_number,0))/SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.reach_number,0))*100,0)-IFNULL(SUM(IF(CONCAT(a.year,a.month)='${startMonth}',a.order_number,0))/SUM(IF(CONCAT(a.year,a.month)='${startMonth}',a.reach_number,0))*100,0),DECIMAL(10,2)) AS success_rate_add,
+				CONVERT(IFNULL(IFNULL(SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.order_number,0))/SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.reach_number,0))*100,0)/IFNULL(SUM(IF(CONCAT(a.year,a.month)='${startMonth}',a.order_number,0))/SUM(IF(CONCAT(a.year,a.month)='${startMonth}',a.reach_number,0))*100,0),2)*100-100,DECIMAL(10,2)) AS success_rate_add_rate
+				FROM (SELECT province_code,SUM(reach_number) AS reach_number,SUM(order_number) AS order_number,SUM(dataplant_income) AS dataplant_income,YEAR,MONTH,category_id
+				FROM auto_operation_month_info WHERE reach_number >0 
+				GROUP BY province_code,YEAR,MONTH,category_id
+				UNION ALL 
+				SELECT province_code,SUM(reach_number) AS reach_number,SUM(order_number) AS order_number,SUM(dataplant_income) AS dataplant_income,YEAR,MONTH,category_id
+				FROM auto_operation_month_info_2017 WHERE reach_number >0 
+				GROUP BY province_code,YEAR,MONTH,category_id) a JOIN auto_operation_category o ON a.category_id=o.id
+				JOIN province p ON a.province_code = p.province_code
+				WHERE  a.province_code != '001' ]]>
+				<if test="orgCode != '' and  orgCode != null"><![CDATA[ AND p.province_code = #{orgCode} ]]></if>
+				<![CDATA[ 
+				AND  CONCAT(YEAR,MONTH) BETWEEN '${startMonth}' AND '${endMonth}'
+				]]>
+				<if test="groupBy != null"><![CDATA[ GROUP BY ${groupBy} ]]></if>
+				<if test="orderBy != null"><![CDATA[ ORDER BY ${orderBy} ]]></if>
+	</select>
+	<!-- (3-3)============================= selectStatisticChart3 =================================== -->
+	<select id="selectStatisticChart3" resultType="AutoOperationStatisticRateChart">
+		<![CDATA[ SELECT o.name AS category_name,'${time2}' AS first_month,'${time3}' AS second_month,'${time4}' AS third_month,
+				CONVERT(IFNULL((SUM(IF(CONCAT(a.year,a.month)='${time2}',a.order_number,0))/SUM(IF(CONCAT(a.year,a.month)='${time1}',a.order_number,0))),2)*100-100,DECIMAL(10,2)) AS rate1,
+				CONVERT(IFNULL((SUM(IF(CONCAT(a.year,a.month)='${time3}',a.order_number,0))/SUM(IF(CONCAT(a.year,a.month)='${time2}',a.order_number,0))),2)*100-100,DECIMAL(10,2)) AS rate2,
+				CONVERT(IFNULL((SUM(IF(CONCAT(a.year,a.month)='${time4}',a.order_number,0))/SUM(IF(CONCAT(a.year,a.month)='${time3}',a.order_number,0))),2)*100-100,DECIMAL(10,2)) AS rate3
+				FROM (SELECT province_code,SUM(reach_number) AS reach_number,SUM(order_number) AS order_number,SUM(dataplant_income) AS dataplant_income,YEAR,MONTH,category_id
+				FROM auto_operation_month_info WHERE reach_number >0 
+				GROUP BY province_code,YEAR,MONTH,category_id
+				UNION ALL 
+				SELECT province_code,SUM(reach_number) AS reach_number,SUM(order_number) AS order_number,SUM(dataplant_income) AS dataplant_income,YEAR,MONTH,category_id
+				FROM auto_operation_month_info_2017 WHERE reach_number >0 
+				GROUP BY province_code,YEAR,MONTH,category_id) a JOIN auto_operation_category o ON a.category_id=o.id
+				JOIN province p ON a.province_code = p.province_code
+				WHERE  a.province_code != '001'
+				AND  CONCAT(YEAR,MONTH) BETWEEN '${time1}' AND '${time4}'
+				GROUP BY o.id
+				ORDER BY CONVERT(IFNULL((SUM(IF(CONCAT(a.year,a.month)='${time4}',a.order_number,0))/SUM(IF(CONCAT(a.year,a.month)='${time1}',a.order_number,0))),2)*100-100,DECIMAL(10,2)) DESC 
+				]]>
+	</select>
+	<!-- (3-4)============================= selectStatisticChart =================================== -->
+	<select id="selectStatisticChart4" resultType="AutoOperationStatisticChart">
+		<![CDATA[ SELECT p.province_name,
+				CONVERT((SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.reach_number,0))-SUM(IF(CONCAT(a.year,a.month)='${startMonth}',a.reach_number,0)))/10000,DECIMAL(10,2)) AS reach_number_add 
+				FROM (SELECT province_code,SUM(reach_number) AS reach_number,SUM(order_number) AS order_number,SUM(dataplant_income) AS dataplant_income,YEAR,MONTH,category_id
+				FROM auto_operation_month_info WHERE reach_number >0  ]]>
+			<if test="provinceCode != '' and  provinceCode != null"><![CDATA[ AND province_code = #{provinceCode} ]]></if>
+			<![CDATA[ 
+				GROUP BY province_code,YEAR,MONTH,category_id
+				UNION ALL 
+				SELECT province_code,SUM(reach_number) AS reach_number,SUM(order_number) AS order_number,SUM(dataplant_income) AS dataplant_income,YEAR,MONTH,category_id
+				FROM auto_operation_month_info_2017 WHERE reach_number >0 
+				GROUP BY province_code,YEAR,MONTH,category_id) a JOIN auto_operation_category o ON a.category_id=o.id
+				JOIN province p ON a.province_code = p.province_code
+				WHERE  a.province_code != '001' AND a.category_id = '${category}'  ]]>
+			<if test="provinceCode != '' and  provinceCode != null"><![CDATA[ AND a.province_code = #{provinceCode} ]]></if>
+			<![CDATA[ 
+				AND  CONCAT(YEAR,MONTH) BETWEEN '${startMonth}' AND '${endMonth}'
+				]]>
+				<if test="groupBy != null"><![CDATA[ GROUP BY ${groupBy} ]]></if>
+				<if test="orderBy != null"><![CDATA[ ORDER BY ${orderBy} ]]></if>
+				<if test="limit != null"><![CDATA[ limit 5 ]]></if>
+	</select>
+	<!-- (3-5)============================= selectStatisticChart =================================== -->
+	<select id="selectStatisticChart5" resultType="AutoOperationStatisticChart">
+		<![CDATA[ SELECT p.province_name,
+				CONVERT((SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.order_number,0))-SUM(IF(CONCAT(a.year,a.month)='${startMonth}',a.order_number,0)))/10000,DECIMAL(10,2)) AS order_number_add 
+				FROM (SELECT province_code,SUM(reach_number) AS reach_number,SUM(order_number) AS order_number,SUM(dataplant_income) AS dataplant_income,YEAR,MONTH,category_id
+				FROM auto_operation_month_info WHERE reach_number >0  ]]>
+			<if test="provinceCode != '' and  provinceCode != null"><![CDATA[ AND province_code = #{provinceCode} ]]></if>
+			<![CDATA[ 
+				GROUP BY province_code,YEAR,MONTH,category_id
+				UNION ALL 
+				SELECT province_code,SUM(reach_number) AS reach_number,SUM(order_number) AS order_number,SUM(dataplant_income) AS dataplant_income,YEAR,MONTH,category_id
+				FROM auto_operation_month_info_2017 WHERE reach_number >0 
+				GROUP BY province_code,YEAR,MONTH,category_id) a JOIN auto_operation_category o ON a.category_id=o.id
+				JOIN province p ON a.province_code = p.province_code
+				WHERE  a.province_code != '001' AND a.category_id = '${category}'  ]]>
+			<if test="provinceCode != '' and  provinceCode != null"><![CDATA[ AND a.province_code = #{provinceCode} ]]></if>
+			<![CDATA[ 
+				AND  CONCAT(YEAR,MONTH) BETWEEN '${startMonth}' AND '${endMonth}'
+				]]>
+				<if test="groupBy != null"><![CDATA[ GROUP BY ${groupBy} ]]></if>
+				<if test="orderBy != null"><![CDATA[ ORDER BY ${orderBy} ]]></if>
+				<if test="limit != null"><![CDATA[ limit 5 ]]></if>
+	</select>
+	<!-- (3-6)============================= selectStatisticChart =================================== -->
+	<select id="selectStatisticChart6" resultType="AutoOperationStatisticChart">
+		<![CDATA[ SELECT p.province_name,
+				SUM(IF(CONCAT(a.year,a.month)='${endMonth}',a.dataplant_income,0))-SUM(IF(CONCAT(a.year,a.month)='${startMonth}',a.dataplant_income,0)) AS dataplant_income_add  
+				FROM (SELECT province_code,SUM(reach_number) AS reach_number,SUM(order_number) AS order_number,SUM(dataplant_income) AS dataplant_income,YEAR,MONTH,category_id
+				FROM auto_operation_month_info WHERE reach_number >0  ]]>
+			<if test="provinceCode != '' and  provinceCode != null"><![CDATA[ AND province_code = #{provinceCode} ]]></if>
+			<![CDATA[ 
+				GROUP BY province_code,YEAR,MONTH,category_id
+				UNION ALL 
+				SELECT province_code,SUM(reach_number) AS reach_number,SUM(order_number) AS order_number,SUM(dataplant_income) AS dataplant_income,YEAR,MONTH,category_id
+				FROM auto_operation_month_info_2017 WHERE reach_number >0 
+				GROUP BY province_code,YEAR,MONTH,category_id) a JOIN auto_operation_category o ON a.category_id=o.id
+				JOIN province p ON a.province_code = p.province_code
+				WHERE  a.province_code != '001' AND a.category_id = '${category}'  ]]>
+			<if test="provinceCode != '' and  provinceCode != null"><![CDATA[ AND a.province_code = #{provinceCode} ]]></if>
+			<![CDATA[ 
+				AND  CONCAT(YEAR,MONTH) BETWEEN '${startMonth}' AND '${endMonth}'
+				]]>
+				<if test="groupBy != null"><![CDATA[ GROUP BY ${groupBy} ]]></if>
+				<if test="orderBy != null"><![CDATA[ ORDER BY ${orderBy} ]]></if>
+				<if test="limit != null"><![CDATA[ limit 5 ]]></if>
+	</select>
+	<select id="selectExportScene" parameterType="map"
+		resultType="map">
+		<![CDATA[ SELECT p.`province_name` AS '省分',IF(i.scene_type = 1,'总部场景',IF(i.scene_type = 2,'省分场景',0)) AS '场景分类',
+					c.name AS'分类',IF(i.scene_type = 1,h.name,b.name) AS '场景名称',IF(i.scene_type = 1,h.remark,b.remark) AS '场景模型及触发行为',
+					i.reach_number AS '当月触发用户数',i.order_number AS '成功订购产品数',i.dataplant_income AS '流量包收入(万元)'
+					FROM `auto_operation_month_info` i JOIN province p ON i.`province_code` = p.`province_code`
+					JOIN `auto_operation_category` c ON i.`category_id` = c.`id`
+					LEFT JOIN `auto_operation_scene_hq` h ON i.`scene_id`  = h.`id`
+					LEFT JOIN `auto_operation_scene_branch` b ON i.`scene_id` = b.`id`
+					WHERE i.year =#{year} AND i.month = #{month} ]]>
+					<if test="province != '' and  province != null"><![CDATA[ AND i.province_code = #{province} ]]></if>
+					<![CDATA[ ORDER BY p.`order_by`,i.`category_id`,i.`scene_type`,h.`id`,b.`id` ]]>
+	</select>
+	<select id="selectStatisticNewValue" parameterType="map" resultType="com.chinauicom.research.stockmanagement.bi.autooperation.entity.AutoOperationStatisticValue">
+		SELECT a.* FROM province p JOIN (
+		SELECT YEAR,MONTH,province_code,SUM(${valueType}) AS `value` FROM `auto_operation_month_info` 
+		<if test="category != '' and  category != null"><![CDATA[ WHERE category_id=#{category} ]]></if>
+		GROUP BY YEAR,MONTH ,province_code
+		UNION ALL SELECT YEAR,MONTH,province_code,SUM(${valueType}) AS `value` FROM `auto_operation_month_info_2017` 
+		<if test="category != '' and  category != null"><![CDATA[ WHERE category_id=#{category} ]]></if>
+		GROUP BY YEAR,MONTH ,province_code) a
+		ON p.province_code = a.province_code
+		WHERE YEAR=#{year}
+		<if test="previous != '' and  previous != null"><![CDATA[-1 AND MONTH='12' ]]></if> 
+		ORDER BY YEAR,MONTH,p.order_by 
+	</select>
+	<select id="selectStatisticNewValue1" parameterType="map" resultType="com.chinauicom.research.stockmanagement.bi.autooperation.entity.AutoOperationStatisticValue">
+		SELECT YEAR,MONTH,SUM(reach_number) AS reach_number,SUM(order_number) AS order_number,SUM(dataplant_income) AS dataplant_income FROM `auto_operation_month_info` WHERE YEAR =#{year}
+		<if test="previous != '' and  previous != null"><![CDATA[-1 AND MONTH='12' ]]></if>
+		GROUP BY YEAR,MONTH 
+		UNION ALL SELECT YEAR,MONTH,SUM(reach_number),SUM(order_number),SUM(dataplant_income) FROM `auto_operation_month_info_2017` WHERE YEAR =#{year}
+		<if test="previous != '' and  previous != null"><![CDATA[-1 AND MONTH='12' ]]></if> 
+		GROUP BY YEAR,MONTH 
+		ORDER BY YEAR,MONTH
+	</select>
+	<select id="selectStatisticNewValue2" parameterType="map" resultType="com.chinauicom.research.stockmanagement.bi.autooperation.entity.AutoOperationStatisticValue">
+		SELECT YEAR,MONTH,category_id,SUM(order_number) AS `order_number`,SUM(reach_number) AS reach_number FROM `auto_operation_month_info` WHERE YEAR =#{year}
+		<if test="previous != '' and  previous != null"><![CDATA[-1 AND MONTH='12' ]]></if> 
+		GROUP BY YEAR,MONTH ,category_id
+		UNION ALL SELECT YEAR,MONTH,category_id,SUM(order_number) AS `order_number`,SUM(reach_number) AS reach_number FROM `auto_operation_month_info_2017` WHERE YEAR =#{year}
+		<if test="previous != '' and  previous != null"><![CDATA[-1 AND MONTH='12' ]]></if> 
+		GROUP BY YEAR,MONTH ,category_id
+		ORDER BY YEAR,MONTH,category_id 
+	</select>
+	<select id="selectStatisticNewSceneValue" parameterType="map" resultType="com.chinauicom.research.stockmanagement.bi.autooperation.entity.AutoOperationStatisticValue">
+		SELECT s.year,s.month,s.`province_code`,s.`scene_id`,s.category_id,IFNULL(a.sceneCount,0) AS `value` FROM `auto_operation_scene` s LEFT JOIN (
+		SELECT YEAR,MONTH,province_code,category_id,scene_type,COUNT(*) AS sceneCount FROM `auto_operation_month_info` WHERE reach_number>0 GROUP BY YEAR,MONTH,province_code,category_id,scene_type
+		UNION ALL
+		SELECT YEAR,MONTH,province_code,category_id,scene_type,COUNT(*) AS sceneCount FROM `auto_operation_month_info_2017` WHERE reach_number>0 GROUP BY YEAR,MONTH,province_code,category_id,scene_type
+		) a ON s.category_id=a.category_id AND s.year=a.year AND s.month=a.month AND s.province_code=a.province_code AND s.scene_id=a.scene_type
+		WHERE s.year = #{year} AND s.month=#{month}
+		ORDER BY s.year,s.month,order_by,category_id,scene_id 
+	</select>
+  
+</mapper>

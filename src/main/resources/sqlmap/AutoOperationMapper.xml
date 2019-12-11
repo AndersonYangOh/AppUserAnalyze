@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Auto_Operation">
+	<resultMap type="AutoOperationMonthInfoList" id="AutoOperationMonthInfoListMap">
+		<result property="rowName" column="ROWNAME"/>
+		<result property="orgName" column="ORGNAME"/>
+		<result property="year" column="YEAR"/>
+		<result property="month" column="MONTH"/>
+		<result property="createTime" column="CREATETIME"/>
+	</resultMap>
+	
+	<select id="selectMonthInfoList" parameterType="map" resultMap="AutoOperationMonthInfoListMap">
+	<![CDATA[ 
+		SELECT CONCAT(MONTH,'月份录入数据') AS rowName,so.ORG_NAME AS orgName,mil.year,mil.month,mil.create_time as createTime
+		FROM auto_operation_month_info_list mil JOIN `sys_organize` so ON mil.org_code = so.ORG_CODE
+		WHERE YEAR = #{year} AND mil.org_code = #{orgCode} 
+		order by month
+	]]>
+	</select>
+	
+	<update id="updateSwitchStatus" parameterType="map">
+    	<![CDATA[ UPDATE auto_operation_switch ]]>
+		<set>  
+	    	<![CDATA[ switch_status = #{switchType} ]]>
+		</set>  
+		<![CDATA[ WHERE year = #{year} AND month = #{month} ]]>
+	</update>
+	
+	<select id="checkNextSwitch" parameterType="map" resultType="int">
+		<![CDATA[ 
+			SELECT COUNT(*) FROM auto_operation_switch WHERE YEAR = #{year} AND MONTH = #{month} 
+		]]>
+	</select>
+	
+	<insert id="insertSwitchStatus" parameterType="map">
+  		<![CDATA[ INSERT INTO auto_operation_switch(year,month,switch_status) VALUES(#{year},#{month},#{switchType})  
+		]]>
+	</insert>
+	
+	<select id="checkMonthInfoList" parameterType="map" resultType="int">
+		<![CDATA[ 
+			SELECT COUNT(*) FROM auto_operation_month_info_list WHERE YEAR = #{year} AND MONTH = #{month} AND org_code = #{province_code}  
+		]]>
+	</select>
+	
+	<insert id="insertMonthInfoList" parameterType="map">
+  		<![CDATA[ INSERT INTO auto_operation_month_info_list(org_code,YEAR,MONTH) VALUES(#{province_code},#{year},#{month})  
+		]]>
+	</insert>
+	
+</mapper>

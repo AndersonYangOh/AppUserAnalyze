@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Auto_Operation_MonthStatistic">
+
+	<!-- 当月订购量 排名 -->
+	<select id="selectMonthOrderNumberRank" parameterType="map"
+		resultType="map">
+		SELECT p.province_name,CONVERT(SUM(order_number/10000),DECIMAL(10,2)) sumnumber FROM
+		auto_operation_month_info a,province p
+		WHERE a.province_code != '001'
+		AND a.province_code=p.province_code
+		AND a.year=#{year} AND
+		a.month=#{month} AND a.category_id=#{category}
+		<if test="provinceCode != '' and  provinceCode != null"><![CDATA[ AND a.province_code = #{provinceCode} ]]></if>
+		GROUP BY a.province_code ORDER BY sumnumber DESC
+		<if test="limit != null"><![CDATA[ limit 5 ]]></if>
+	</select>
+
+	<!-- 全国各月流量包订购量 -->
+	<select id="selectMonthOrderNumber" parameterType="map"
+		resultType="map">
+		SELECT * FROM (
+		SELECT a.year,a.month,
+		CONCAT(ROUND(SUM(a.reach_number/10000),2),'') sumReachNumber,
+		CONCAT(ROUND(SUM(a.order_number/10000),2),'')sumNumber,
+		CONCAT(ROUND(SUM(a.dataplant_income),2),'') sumIncome
+		FROM
+		auto_operation_month_info a
+		WHERE a.province_code != '001' 
+		<if test="category != '' and  category != null"><![CDATA[ AND category_id = #{category} ]]></if>
+		<if test="provinceCode != '' and  provinceCode != null"><![CDATA[ AND a.province_code = #{provinceCode} ]]></if>
+		GROUP BY a.year,a.month
+		UNION ALL
+		SELECT
+		a.year,a.month,
+		CONCAT(ROUND(SUM(a.reach_number/10000),2),'') sumReachNumber,
+		CONCAT(ROUND(SUM(a.order_number/10000),2),'')sumNumber,
+		CONCAT(ROUND(SUM(a.dataplant_income),2),'') sumIncome
+		FROM
+		auto_operation_month_info_2017 a
+		WHERE a.province_code != '001' 
+		<if test="category != '' and  category != null"><![CDATA[ AND category_id = #{category} ]]></if>
+		<if test="provinceCode != '' and  provinceCode != null"><![CDATA[ AND a.province_code = #{provinceCode} ]]></if>
+		GROUP BY a.year,a.month) v
+		WHERE CONCAT(YEAR,MONTH) BETWEEN
+		#{startMonth} AND #{endMonth}
+		ORDER BY YEAR,MONTH
+	</select>
+
+
+	<!--某月到某月流量包累计订购量和收入 -->
+	<select id="selectTotalOrderNumber" parameterType="map"
+		resultType="map">
+		SELECT so.province_name,SUM(order_number) AS order_number,SUM(dataplant_income)
+		AS dataplant_income FROM province so LEFT JOIN
+		(
+		SELECT
+		province_code,ROUND(SUM(order_number/10000),2) AS
+		order_number,SUM(dataplant_income)
+		AS dataplant_income,YEAR,MONTH
+		FROM
+		auto_operation_month_info WHERE reach_number >0 AND category_id =
+		#{category}
+		<if test="provinceCode != '' and  provinceCode != null"><![CDATA[ AND province_code = #{provinceCode} ]]></if>
+		<![CDATA[ GROUP BY province_code,YEAR,MONTH
+		UNION ALL
+		SELECT
+		province_code,ROUND(SUM(order_number/10000),2) AS
+		order_number,SUM(dataplant_income) AS dataplant_income,YEAR,MONTH
+		FROM
+		auto_operation_month_info_2017 WHERE reach_number >0 AND category_id =
+		#{category} ]]>
+		<if test="provinceCode != '' and  provinceCode != null"><![CDATA[ AND province_code = #{provinceCode} ]]></if>
+		<![CDATA[
+		GROUP BY province_code,YEAR,MONTH
+		) v ON so.province_code =
+		v.province_code
+		WHERE so.province_code <> '001' AND so.province_code
+		<>'022' AND
+		CONCAT(YEAR,MONTH) BETWEEN #{startMonth} AND #{endMonth}
+		GROUP BY so.province_name
+		ORDER BY order_number DESC ]]>
+		<if test="limit != null"><![CDATA[ limit 5 ]]></if>
+	</select>
+	
+	<!--某月到某月流量包累计订购量和收入 -->
+	<select id="selectTotalIncome" parameterType="map"
+		resultType="map">
+		SELECT so.province_name,SUM(order_number) AS order_number,SUM(dataplant_income)
+		AS dataplant_income FROM province so LEFT JOIN
+		(
+		SELECT
+		province_code,ROUND(SUM(order_number/10000),2) AS
+		order_number,SUM(dataplant_income)
+		AS dataplant_income,YEAR,MONTH
+		FROM
+		auto_operation_month_info WHERE reach_number >0 AND category_id =
+		#{category}
+		<if test="provinceCode != '' and  provinceCode != null"><![CDATA[ AND province_code = #{provinceCode} ]]></if>
+		<![CDATA[ GROUP BY province_code,YEAR,MONTH
+		UNION ALL
+		SELECT
+		province_code,ROUND(SUM(order_number/10000),2) AS
+		order_number,SUM(dataplant_income) AS dataplant_income,YEAR,MONTH
+		FROM
+		auto_operation_month_info_2017 WHERE reach_number >0 AND category_id =
+		#{category} ]]>
+		<if test="provinceCode != '' and  provinceCode != null"><![CDATA[ AND province_code = #{provinceCode} ]]></if>
+		<![CDATA[
+		GROUP BY province_code,YEAR,MONTH
+		) v ON so.province_code =
+		v.province_code
+		WHERE so.province_code <> '001' AND so.province_code
+		<>'022' AND
+		CONCAT(YEAR,MONTH) BETWEEN #{startMonth} AND #{endMonth}
+		GROUP BY so.province_name
+		ORDER BY dataplant_income DESC ]]>
+		<if test="limit != null"><![CDATA[ limit 5 ]]></if>
+	</select>
+	
+	<!--某月到某月流量包累计订购量和收入 -->
+	<select id="selectTotalReach" parameterType="map"
+		resultType="map">
+		SELECT so.province_name,SUM(reach_number) AS reach_number,SUM(dataplant_income)
+		AS dataplant_income FROM province so LEFT JOIN
+		(
+		SELECT
+		province_code,ROUND(SUM(reach_number/10000),2) AS
+		reach_number,SUM(dataplant_income)
+		AS dataplant_income,YEAR,MONTH
+		FROM
+		auto_operation_month_info WHERE reach_number >0 AND category_id =
+		#{category}
+		<if test="provinceCode != '' and  provinceCode != null"><![CDATA[ AND province_code = #{provinceCode} ]]></if>
+		<![CDATA[ GROUP BY province_code,YEAR,MONTH
+		UNION ALL
+		SELECT
+		province_code,ROUND(SUM(reach_number/10000),2) AS
+		reach_number,SUM(dataplant_income) AS dataplant_income,YEAR,MONTH
+		FROM
+		auto_operation_month_info_2017 WHERE reach_number >0 AND category_id =
+		#{category} ]]>
+		<if test="provinceCode != '' and  provinceCode != null"><![CDATA[ AND province_code = #{provinceCode} ]]></if>
+		<![CDATA[
+		GROUP BY province_code,YEAR,MONTH
+		) v ON so.province_code =
+		v.province_code
+		WHERE so.province_code <> '001' AND so.province_code
+		<>'022' AND
+		CONCAT(YEAR,MONTH) BETWEEN #{startMonth} AND #{endMonth}
+		GROUP BY so.province_name
+		ORDER BY reach_number DESC ]]>
+		<if test="limit != null"><![CDATA[ limit 5 ]]></if>
+	</select>
+
+	<!-- 各省最近三个月流量包订购量变化情况  -->
+	<select id="selectThreeMonthOrderNumber" parameterType="map"
+		resultType="map">
+		SELECT p.province_name,
+		CONVERT(SUM(IF(CONCAT(a.year,a.month)=#{time1},a.order_number/10000,0)),DECIMAL(10,2)) AS c1,
+		CONVERT(SUM(IF(CONCAT(a.year,a.month)=#{time2},a.order_number/10000,0)),DECIMAL(10,2)) AS c2,
+		CONVERT(SUM(IF(CONCAT(a.year,a.month)=#{time3},a.order_number/10000,0)),DECIMAL(10,2)) AS c3
+		FROM province p LEFT JOIN
+		(
+		SELECT province_code,SUM(reach_number) AS reach_number,SUM(order_number) AS
+		order_number,SUM(dataplant_income) AS dataplant_income,YEAR,MONTH
+		FROM auto_operation_month_info WHERE reach_number >0 
+		<if test="category != '' and  category != null"><![CDATA[ AND category_id= #{category} ]]></if>
+		<if test="provinceCode != '' and  provinceCode != null"><![CDATA[ AND province_code = #{provinceCode} ]]></if>
+		GROUP BY province_code,YEAR,MONTH
+		UNION ALL
+		SELECT province_code,SUM(reach_number) AS reach_number,SUM(order_number) AS
+		order_number,SUM(dataplant_income) AS dataplant_income,YEAR,MONTH
+		FROM auto_operation_month_info_2017 WHERE reach_number >0 
+		<if test="category != '' and  category != null"><![CDATA[ AND category_id= #{category} ]]></if>
+		<if test="provinceCode != '' and  provinceCode != null"><![CDATA[ AND province_code = #{provinceCode} ]]></if>
+		GROUP BY province_code,YEAR,MONTH
+		) a ON p.province_code = a.province_code
+		WHERE a.province_code != '001'
+		AND CONCAT(a.year,a.month) BETWEEN #{time1} AND #{time3}
+		GROUP BY p.province_name ORDER BY p.order_by
+		<if test="limit != null"><![CDATA[ limit 5 ]]></if>
+	</select>
+	
+	<!-- 固网 BSS CBSS -->
+	<select id="selectBSSRank" parameterType="map"
+		resultType="map">
+		SELECT b.`month`,d.`ThirdClassName`,b.`third_class_name` AS TCN,SUM(b.`value`) AS sumValue FROM `busi_analysis` b,`dim_thirdclass` d 
+		WHERE d.`ID`=b.`third_class_name` AND b.parent_class_name='15' AND b.`child_class_name`='35' 
+		AND MONTH BETWEEN  #{time1} AND #{time6}
+		<if test="provinceCode != '' and  provinceCode != null"><![CDATA[ AND province_code = #{provinceCode} ]]></if>
+		GROUP BY b.`month`,b.`third_class_name` ORDER BY b.`month`,b.`third_class_name`
+	</select>
+	<select id="selectCBSSRank" parameterType="map"
+		resultType="map">
+		SELECT b.`month`,d.`ThirdClassName`,b.`third_class_name` AS TCN,SUM(b.`value`) AS sumValue FROM `busi_analysis` b,`dim_thirdclass` d 
+		WHERE d.`ID`=b.`third_class_name` AND b.parent_class_name='15' AND b.`child_class_name`='36'  
+		AND MONTH BETWEEN  #{time1} AND #{time6}
+		<if test="provinceCode != '' and  provinceCode != null"><![CDATA[ AND province_code = #{provinceCode} ]]></if>
+		GROUP BY b.`month`,b.`third_class_name` ORDER BY b.`month`,b.`third_class_name`
+	</select>
+	<!-- 固网 BSS CBSS -->
+	<select id="selectBSSRankDetail" parameterType="map"
+		resultType="map">
+		SELECT p.`province_name`AS provinceName,d.ThirdClassName,b.`third_class_name` AS TCN,b.`value` AS sumValue FROM `busi_analysis` b,`province` p ,`dim_thirdclass` d
+		WHERE b.`province_code`=p.`province_code` AND b.`third_class_name`=d.id AND b.parent_class_name='15' AND b.`child_class_name`='35'  AND b.`month`=#{month}
+		ORDER BY p.order_by,b.`third_class_name`
+	</select>
+	<select id="selectCBSSRankDetail" parameterType="map"
+		resultType="map">
+		SELECT p.`province_name`AS provinceName,d.ThirdClassName,b.`third_class_name` AS TCN,b.`value` AS sumValue FROM `busi_analysis` b,`province` p ,`dim_thirdclass` d
+		WHERE b.`province_code`=p.`province_code` AND b.`third_class_name`=d.id AND b.parent_class_name='15' AND b.`child_class_name`='36'  AND b.`month`=#{month}
+		ORDER BY p.order_by,b.`third_class_name`
+	</select>
+	
+	<!-- 策略中心 -->
+	<select id="selectCelueDay" resultType="java.lang.String">
+		SELECT `day` FROM `busi_analysis_day` WHERE parent_class_name = 28 ORDER BY `day` DESC LIMIT 1
+	</select>
+	<select id="selectCelueDayTotal" resultType="map" parameterType="java.lang.String">
+		SELECT '当日总用户' AS third_class_name,SUM(`value`) AS `value` FROM `busi_analysis_day` WHERE parent_class_name = '28' 
+		AND child_class_name IN('65','66','67','68','69') AND third_class_name IN('606','616','626','636','646') 
+		AND `day`='${_parameter}'
+		GROUP BY parent_class_name
+		UNION ALL
+		SELECT '当日有效用户' AS third_class_name,SUM(`value`) AS `value` FROM `busi_analysis_day` WHERE parent_class_name = '28' 
+		AND child_class_name IN('65','66','67','68','69') AND third_class_name IN('607','617','627','637','647') 
+		AND `day`='${_parameter}'
+		GROUP BY parent_class_name
+	</select>
+	<select id="selectCelueMonthTotal" resultType="map" parameterType="java.lang.String">
+		SELECT '当月总用户' AS third_class_name,SUM(`value`) AS `value` FROM `busi_analysis_day` WHERE parent_class_name = '28' 
+		AND child_class_name IN('65','66','67','68','69') AND third_class_name IN('606','616','626','636','646') 
+		AND `day` LIKE '${_parameter}%' 
+		GROUP BY parent_class_name
+		UNION ALL
+		SELECT '当月有效用户' AS third_class_name,SUM(`value`) AS `value` FROM `busi_analysis_day` WHERE parent_class_name = '28' 
+		AND child_class_name IN('65','66','67','68','69') AND third_class_name IN('607','617','627','637','647') 
+		AND `day` LIKE '${_parameter}%' 
+		GROUP BY parent_class_name
+	</select>
+	<select id="selectCelueDayTable" resultType="map" parameterType="java.lang.String">
+		SELECT child_class_name,third_class_name,`value` FROM `busi_analysis_day` WHERE parent_class_name = '28' 
+		AND child_class_name IN('65','66','67','68','69') 
+		AND `day` = '${_parameter}' ORDER BY child_class_name,third_class_name
+	</select>
+	<select id="selectCelueDayChart" resultType="map" parameterType="java.lang.String">
+		SELECT third_class_name,`value` FROM `busi_analysis_day` WHERE parent_class_name = '28' 
+		AND child_class_name IN('65') AND third_class_name IN('606','607','608','609','610','611') 
+		AND `day` LIKE '${_parameter}' ORDER BY third_class_name
+	</select>
+	<select id="selectCBSSDayTime" resultType="java.lang.String">
+   		<![CDATA[ SELECT b.`month` 
+			FROM `busi_analysis` b,`province` p ,`dim_thirdclass` d WHERE b.`province_code`=p.`province_code` 
+			AND b.`third_class_name`=d.id AND b.parent_class_name='15' AND b.`child_class_name`='36' 
+			ORDER BY b.`month` DESC LIMIT 1  ]]>   
+	</select>
+	<select id="selectBSSDayTime" resultType="java.lang.String">
+   		<![CDATA[ SELECT b.`month` 
+			FROM `busi_analysis` b,`province` p ,`dim_thirdclass` d WHERE b.`province_code`=p.`province_code` 
+			AND b.`third_class_name`=d.id AND b.parent_class_name='15' AND b.`child_class_name`='36' 
+			ORDER BY b.`month` DESC LIMIT 1 ]]>   
+	</select>
+</mapper>

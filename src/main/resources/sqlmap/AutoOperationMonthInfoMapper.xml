@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Auto_Operation_Month_Info">
+	<resultMap type="AutoOperationMonthWeb" id="AutoOperationMonthWebMap">
+		<result property="categoryId" column="id" jdbcType="INTEGER"/>
+		<result property="categoryName" column="name" jdbcType="VARCHAR"/>
+		<result property="datapackageStatus" column="datapackage_status" jdbcType="VARCHAR"/>
+		<collection property="dlist" column="{id=id,province_code=province_code,year=year,month=month}" 
+			ofType="AutoOperationMonthDetail" select="selectAutoOperationMonthInfoDetail" javaType="ArrayList" />
+	</resultMap>
+	
+	<select id="selectAutoOperationMonthInfo" parameterType="map" resultMap="AutoOperationMonthWebMap">
+		select id,name,datapackage_status,#{province_code} province_code,#{year} year ,#{month} month  from auto_operation_category;
+	</select>
+	
+	<select id="selectAutoOperationMonthInfoDetail" parameterType="map" resultType="AutoOperationMonthDetail" >
+		SELECT hp.NAME scene_name,hp.remark scene_remark,hp.category_id category_id,
+			info.scene_id,info.scene_type,info.reach_number,info.order_number,info.dataplant_income,
+			info.province_code,info.year,info.month
+			FROM auto_operation_scene_hq hp, auto_operation_month_info info 
+			WHERE hp.id=info.scene_id AND hp.category_id=#{id}
+			AND info.scene_type='1' AND info.province_code=#{province_code}  AND info.year=#{year} AND info.month=#{month}
+			UNION
+			SELECT branch.name scene_name,branch.remark  scene_remark,branch.category_id  category_id,
+			info.scene_id,info.scene_type,info.reach_number,info.order_number,info.dataplant_income,
+			info.province_code,info.year,info.month
+			FROM auto_operation_scene_branch branch, auto_operation_month_info info
+			WHERE branch.id=info.scene_id AND branch.category_id=#{id}
+			AND info.scene_type='2' AND info.province_code=#{province_code} AND info.year=#{year} AND info.month=#{month}   
+			AND branch.province_code=info.province_code AND branch.year = info.year AND branch.month=info.month		
+	</select>
+	
+	<select id="selectMonthInfoCount" parameterType="map" resultType="int" >
+		SELECT COUNT(*) FROM auto_operation_month_info WHERE YEAR=#{year} AND MONTH=#{month} AND province_code=#{province_code} 
+	</select>
+	
+	<select id="selectTotalInfo" parameterType="map" resultType="AutoOperationStatistic">
+		<![CDATA[ SELECT province_code AS org_name,SUM(reach_number) AS reach_number,SUM(order_number) AS order_number,SUM(dataplant_income) AS dataplant_income 
+				FROM auto_operation_month_info WHERE YEAR =#{year} AND MONTH =#{month} AND reach_number >0 AND province_code = #{province_code}
+				GROUP BY province_code
+		]]>
+	</select>
+	
+	<delete id="deleteAutoOperationMonthInfo" parameterType="map">
+		delete FROM auto_operation_month_info WHERE YEAR=#{year} AND MONTH=#{month} AND province_code=#{province_code} 
+	</delete>
+	
+	<insert id="insertAutoOperationMonthInfo" parameterType="java.util.List">
+		insert into auto_operation_month_info(year,month,scene_id,scene_type,category_id,reach_number,order_number,dataplant_income,province_code)
+		values
+		<foreach collection="list"  item="item" index="index"   separator=",">
+			(#{item.year},#{item.month},#{item.sceneId},#{item.sceneType},#{item.categoryId},#{item.reachNumber},#{item.orderNumber},#{item.dataplantIncome},#{item.provinceCode})
+		</foreach>
+	</insert>
+</mapper>

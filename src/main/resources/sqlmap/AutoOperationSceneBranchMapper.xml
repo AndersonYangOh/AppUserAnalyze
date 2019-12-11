@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Auto_Operation_SceneBranch">
+	
+	<insert id="inserAutoOperationSceneBranch" useGeneratedKeys="true" keyProperty="id" parameterType="AutoOperationSceneBranch">
+		insert into auto_operation_scene_branch(name,remark,category_id,province_code,year,month)
+		value
+		(#{name},#{remark},#{categoryId},#{provinceCode},#{year},#{month})
+	</insert>
+	
+	<delete id="deleteAutoOperationSceneBranch" parameterType="java.util.Map">
+		delete from auto_operation_scene_branch where province_code=#{province_code} and year=#{year}
+		and month=#{month}
+	</delete>
+	
+</mapper>

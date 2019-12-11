@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>存量运营数据分析平台</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
+
+	<link rel="stylesheet" href="phone-web/css/base.css">
+	<link rel="stylesheet" href="phone-web/css/layout.css">
+
+	<script src="phone-web/js/jquery-1.11.3.min.js"></script>
+	<script src="phone-web/js/btn.js"></script>
+	<script type="text/javascript" src="phone-web/js/echarts.min.js"></script>
+
+</head>
+<body style="overflow-y:hidden;background:#2b2b37">
+
+<div class="unicom">
+	<!-- 导航条 -->
+	<div class="u-navbar">
+		<ul>
+			<li>
+				<a class="home" href="./phone-web/iframe/home.html" target="main" style="text-decoration : none;">
+					<p class="p2 u-active" >首页</p>
+				</a>
+			</li>
+			<li>
+				<a href="./phone-web/iframe/fenlei.html" target="main" style="text-decoration : none;">
+					<p class="p2">分类</p>
+				</a>
+			</li>
+			<li>	
+				<a href="./phone-web/iframe/mulu.html" target="main" style="text-decoration : none;">
+					<p class="p2">目录</p>
+				</a>
+			</li>
+			<li>
+				<a href="./phone-web/iframe/yuebao.html" target="main" style="text-decoration : none;">
+					<p class="p2">月报</p>
+				</a>
+			</li>
+		</ul>
+	</div>
+	<!-- 所有页面从这里引入 -->
+	<iframe class="main"  src="phone-web/iframe/home.html" name="main" frameborder="0" height='100%' width='100%' style="display:block"></iframe>
+	
+	<script>
+	//nav选中效果
+		$(document).ready(function() {
+			$(".u-navbar ul li p").click(function() {
+				$(".u-navbar ul li p").removeClass("u-active");
+				$(this).addClass("u-active");
+			});
+		});	
+	</script>
+</div>
+	
+</body>
+</html>
+</html>
